@@ -1,0 +1,42 @@
+[workspace]
+resolver = "3"
+members = [
+    "app",
+    "crates/vanguard_core",
+    "crates/vanguard_auth",
+]
+
+[workspace.package]
+version = "1.0.0"
+
+[profile.release]
+debug = 1
+split-debuginfo = 'packed'
+strip = 'debuginfo'
+panic = 'abort'
+
+[profile.release-dbgsym]
+inherits = "release"
+split-debuginfo = 'off'
+strip = 'none'
+
+[profile.bench]
+strip = 'none'
+
+[workspace.dependencies]
+hyper = { version = "1", features = ["full"] }
+tokio = { version = "1", features = ["full"] }
+http-body-util = "0.1"
+hyper-util = { version = "0.1", features = ["full"] }
+maud = "0.27"
+bytes = "1.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+fn-dsa = "0.3.0"
+base64 = "0.22"
+chrono = { version = "0.4", features = ["serde"] }
+cookie = { version = "0.18", features = ["percent-encode"] }
+rand = "0.8"
+mime_guess = "2.0"
+dotenvy = "0.15"
+dashmap = "6.0"

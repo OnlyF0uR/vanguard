@@ -1,0 +1,38 @@
+# Vanguard Framework Demo
+
+A minimal, ultra-fast, "military grade" fullstack Rust framework using `hyper` 1.0, `maud` for SSR, and a custom vanilla JS router for SPA-like navigation.
+
+## Features
+
+- **Server-Side Rendering (SSR):** Fast HTML generation with Maud.
+- **Client-Side Routing:** Intercepts links for instant page transitions without full reloads (SPA feel).
+- **State Hydration:** Seamlessly pass state from Rust (server) to JavaScript (client).
+- **Zero-Build Frontend:** No Webpack, no Bundler, just standard web technologies.
+- **Robust Architecture:** Modular `vanguard_core` crate and separate `app`.
+
+## Prerequisites
+
+- Rust (latest stable)
+
+## Running the App
+
+1. Navigate to the project root.
+2. Run the app:
+
+```bash
+cargo run -p app
+```
+
+3. Open http://localhost:3000
+
+## Project Structure
+
+- `app/`: The user application.
+  - `src/main.rs`: Routes and handlers.
+- `crates/vanguard_core/`: The framework internals.
+  - `router.rs`: Type-safe async router.
+  - `server.rs`: Hyper TCP listener.
+  - `state.rs`: State serialization helpers.
+  - `static_files.rs`: Secure static file serving.
+  - `view.rs`: Base layout templates.
+- `static/`: Static assets (JS, CSS).

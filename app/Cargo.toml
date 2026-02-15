@@ -1,0 +1,32 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+
+vanguard_core = { path = "../crates/vanguard_core" }
+
+vanguard_auth = { path = "../crates/vanguard_auth" }
+
+dotenvy = { workspace = true }
+
+dashmap = { workspace = true }
+
+tokio = { workspace = true, features = ["full"] }
+
+serde = { workspace = true, features = ["derive"] }
+
+serde_json = { workspace = true }
+
+serde_urlencoded = "0.7"
+
+maud = { workspace = true }
+
+hyper = { workspace = true }
+
+hyper-util = { workspace = true }
+
+http-body-util = { workspace = true }
+
+bytes = { workspace = true }
