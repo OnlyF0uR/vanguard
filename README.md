@@ -24,15 +24,3 @@ cargo run -p app
 ```
 
 3. Open http://localhost:3000
-
-## Project Structure
-
-- `app/`: The user application.
-  - `src/main.rs`: Routes and handlers.
-- `crates/vanguard_core/`: The framework internals.
-  - `router.rs`: Type-safe async router.
-  - `server.rs`: Hyper TCP listener.
-  - `state.rs`: State serialization helpers.
-  - `static_files.rs`: Secure static file serving.
-  - `view.rs`: Base layout templates.
-- `static/`: Static assets (JS, CSS).
