@@ -1,6 +1,6 @@
 # Vanguard Framework Demo
 
-A minimal, ultra-fast, "military grade" fullstack Rust framework using `hyper` 1.0, `maud` for SSR, and a custom vanilla JS router for SPA-like navigation.
+A minimal, ultra-fast, and comprehensive fullstack Rust framework using `hyper` 1.0, `maud` for SSR, `tokio` for concurrency, and a custom vanilla JS router for SPA-like navigation.
 
 ## Features
 
