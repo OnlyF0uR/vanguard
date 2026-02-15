@@ -3,26 +3,30 @@ use maud::{html, Markup};
 pub fn login_page(error: Option<&str>) -> Markup {
     html! {
         div class="container" {
-            h1 { "Login" }
-            
-            @if let Some(err) = error {
-                div class="error" { (err) }
+            div class="card" {
+                h1 { "Sign In" }
+                p { "Enter your credentials to access your protected dashboard. Try 'username' and 'password'." }
+
+                @if let Some(err) = error {
+                    div class="error-banner" { (err) }
+                }
+
+                form action="/login" method="POST" {
+                    div class="form-group" {
+                        label { "Username" }
+                        input type="text" name="username" required autocomplete="username";
+                    }
+                    div class="form-group" {
+                        label { "Password" }
+                        input type="password" name="password" required autocomplete="current-password";
+                    }
+                    button type="submit" class="btn" style="width: 100%; margin-top: 1rem;" { "Sign In" }
+                }
             }
 
-            form action="/login" method="POST" class="auth-form" {
-                div {
-                    label { "Username: " }
-                    input type="text" name="username" required;
-                }
-                div {
-                    label { "Password: " }
-                    input type="password" name="password" required;
-                }
-                button type="submit" class="btn" { "Sign In" }
+            div style="margin-top: 2rem;" {
+                a href="/" class="nav-link" { "← Back to Home" }
             }
-
-            p { "Hint: Use any username and password." }
-            p { a href="/" { "<- Back to Home" } }
         }
     }
 }
@@ -30,14 +34,23 @@ pub fn login_page(error: Option<&str>) -> Markup {
 pub fn profile_page(username: &str) -> Markup {
     html! {
         div class="container" {
-            h1 { "Profile" }
-            p { "Welcome back, " b { (username) } "!" }
-            
-            form action="/logout" method="POST" {
-                button type="submit" class="btn" { "Logout" }
+            div class="card" {
+                h1 { "User Profile" }
+                p { "Logged in as " b { (username) } }
+
+                div style="padding: 1.5rem 0; border-top: 1px solid var(--border); margin-top: 1.5rem;" {
+                    h3 style="font-size: 1rem; margin-bottom: 0.5rem;" { "Session Information" }
+                    p style="font-size: 0.875rem;" { "Authentication is achieved using FN-DSA signatures." }
+                }
+
+                form action="/logout" method="POST" {
+                    button type="submit" class="btn btn-outline" { "Sign Out" }
+                }
             }
-            
-            p { a href="/" { "<- Back to Home" } }
+
+            div style="margin-top: 2rem;" {
+                a href="/" class="nav-link" { "← Back to Home" }
+            }
         }
     }
 }

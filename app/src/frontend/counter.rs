@@ -10,12 +10,20 @@ pub struct CounterState {
 pub fn counter_page(state: &CounterState) -> Markup {
     html! {
         div class="container" {
-            h1 { "Interactive Counter" }
-            p { "This counter is persistent and synced to your user account." }
-            
-            div class="counter-box" {
-                p { "Current count: " span id="count-display" { (state.count) } }
-                button id="inc-btn" class="btn" { "Increment (API)" }
+            div class="card" {
+                h1 { "Counter Demo" }
+                p { "This counter persists per-user using server-side storage and hydration." }
+                
+                div style="text-align: center;" {
+                    span id="count-display" { (state.count) }
+                    div {
+                        button id="inc-btn" class="btn" { "Increment Count" }
+                    }
+                }
+            }
+
+            div style="margin-top: 2rem;" {
+                a href="/" class="nav-link" { "← Back to Home" }
             }
 
             (serialize_state("counter", state))
@@ -28,28 +36,25 @@ pub fn counter_page(state: &CounterState) -> Markup {
                     display.innerText = state.count;
 
                     btn.onclick = async () => {
-                        btn.disabled = true;
+                        // Minimal visual feedback without changing text
+                        btn.style.opacity = '0.7';
                         try {
                             const response = await fetch('/api/increment', { method: 'POST' });
                             if (response.ok) {
                                 const data = await response.json();
-                                state.count = data.count;
-                                Router.setState('counter', state, true); // Force update current session state
-                                Router.invalidateCache('/counter'); // Invalidate stale HTML cache
-                                display.innerText = state.count;
+                                Router.setState('counter', { count: data.count }, true);
+                                display.innerText = data.count;
                             } else if (response.status === 401) {
                                 window.location.href = '/login';
                             }
                         } catch (err) {
-                            console.error('Failed to increment:', err);
+                            console.error('Increment failed:', err);
                         } finally {
-                            btn.disabled = false;
+                            btn.style.opacity = '1';
                         }
                     };
                 "#))
             }
-
-            p { a href="/" { "<- Back to Home" } }
         }
     }
 }

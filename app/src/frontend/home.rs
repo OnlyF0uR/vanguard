@@ -2,17 +2,30 @@ use maud::{html, Markup};
 
 pub fn home_page() -> Markup {
     html! {
-        div class="container" {
-            h1 { "Welcome to Vanguard" }
-            p { "This is a demonstration of a minimal, ultra-fast Rust fullstack framework." }
-            
-            div class="features" {
-                h2 { "New: Authentication Support" }
-                p { "Secure tokens powered by fn-dsa and cookies." }
-                a href="/login" class="btn" { "Go to Login" }
+        div {
+            section style="margin-bottom: 4rem;" {
+                h1 { "Vanguard Framework" }
+                p { "A high-performance Rust foundation for secure, server-rendered web applications." }
+                div style="display: flex; gap: 1rem;" {
+                    a href="/login" class="btn" { "Get Started" }
+                    a href="/counter" class="btn btn-outline" { "View Demo" }
+                }
             }
-
-            a href="/counter" class="btn" { "Try the Counter ->" }
+            
+            div class="grid" {
+                div class="grid-item" {
+                    h3 { "Performance" }
+                    p { "Built on Hyper 1.0 for low-latency, high-throughput request handling." }
+                }
+                div class="grid-item" {
+                    h3 { "Security" }
+                    p { "Session integrity verified with 512-bit FN-DSA digital signatures." }
+                }
+                div class="grid-item" {
+                    h3 { "Architecture" }
+                    p { "Clean separation between server-side logic and modular frontend components." }
+                }
+            }
         }
     }
 }
