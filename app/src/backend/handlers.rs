@@ -2,16 +2,24 @@ use hyper::{Response, StatusCode};
 use http_body_util::{Full, BodyExt};
 use bytes::Bytes;
 use vanguard_core::router::{HandlerResponse, Ctx};
-use vanguard_core::view::base_layout;
+use vanguard_core::view::Page;
 use vanguard_auth::Claims;
 use crate::backend::AppState;
 use crate::frontend::{home, counter, auth};
 use crate::frontend::counter::CounterState;
 use serde::Deserialize;
+use validator::Validate;
 
-pub async fn home_handler(_ctx: Ctx<AppState>) -> HandlerResponse {
-    let content = home::home_page();
-    Ok(html_response(base_layout("Home - Vanguard", content).into_string()))
+pub async fn home_handler(ctx: Ctx<AppState>) -> HandlerResponse {
+    let is_auth = get_user(&ctx).is_some();
+    let content = home::home_page(is_auth);
+    let page = Page::new("Home - Vanguard")
+        .description("A high-performance Rust foundation for secure, server-rendered web applications.")
+        .keywords(&["vanguard", "rust", "framework", "hyper", "web"])
+        .content(content)
+        .render()
+        .into_string();
+    Ok(html_response(page))
 }
 
 pub async fn counter_handler(ctx: Ctx<AppState>) -> HandlerResponse {
@@ -24,10 +32,23 @@ pub async fn counter_handler(ctx: Ctx<AppState>) -> HandlerResponse {
     
     let state = CounterState { count };
     let content = counter::counter_page(&state);
-    Ok(html_response(base_layout("Counter - Vanguard", content).into_string()))
+    let page = Page::new("Counter - Vanguard")
+        .description("Interactive counter demo built with Vanguard.")
+        .content(content)
+        .render()
+        .into_string();
+    Ok(html_response(page))
 }
 
 pub async fn increment_api_handler(ctx: Ctx<AppState>) -> HandlerResponse {
+    if !ctx.state.rate_limiter.check_limit(ctx.ip()) {
+        return Ok(Response::builder()
+            .status(StatusCode::TOO_MANY_REQUESTS)
+            .header("Content-Type", "text/plain")
+            .body(Full::new(Bytes::from("429 Too Many Requests: Slow down!")))
+            .unwrap());
+    }
+
     let user = match get_user(&ctx) {
         Some(u) => u,
         None => return Ok(Response::builder().status(StatusCode::UNAUTHORIZED).body(Full::new(Bytes::from("Unauthorized"))).unwrap()),
@@ -49,23 +70,68 @@ pub async fn login_get_handler(ctx: Ctx<AppState>) -> HandlerResponse {
     if get_user(&ctx).is_some() {
         return redirect("/profile");
     }
-    let content = auth::login_page(None);
-    Ok(html_response(base_layout("Login - Vanguard", content).into_string()))
+
+    let csrf_token = ctx.state.auth.generate_csrf_token();
+    let csrf_cookie = ctx.state.auth.csrf_cookie(&csrf_token, ctx.state.secure);
+
+    let content = auth::login_page(None, &csrf_token);
+    let page = Page::new("Login - Vanguard")
+        .description("Log in to your Vanguard account.")
+        .content(content)
+        .render()
+        .into_string();
+
+    Ok(Response::builder()
+        .header("Content-Type", "text/html")
+        .header("Set-Cookie", csrf_cookie)
+        .body(Full::new(Bytes::from(page)))
+        .unwrap())
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 struct LoginData {
+    #[validate(length(min = 3, message = "Username must be at least 3 characters"))]
     username: String,
+    #[validate(length(min = 6, message = "Password must be at least 6 characters"))]
     #[allow(dead_code)]
     password: String,
+    csrf_token: String,
 }
 
 pub async fn login_post_handler(mut ctx: Ctx<AppState>) -> HandlerResponse {
     let body_bytes = ctx.req.body_mut().collect().await?.to_bytes();
     let login_data: LoginData = match serde_urlencoded::from_bytes(&body_bytes) {
         Ok(data) => data,
-        Err(_) => return Ok(html_response(base_layout("Login - Vanguard", auth::login_page(Some("Invalid form data"))).into_string())),
+        Err(_) => {
+            let page = Page::new("Login - Vanguard")
+                .content(auth::login_page(Some("Invalid form data"), ""))
+                .render()
+                .into_string();
+            return Ok(html_response(page));
+        }
     };
+
+    if let Err(e) = login_data.validate() {
+        let err_msg = e.to_string();
+        let page = Page::new("Login - Vanguard")
+            .content(auth::login_page(Some(&err_msg), ""))
+            .render()
+            .into_string();
+        return Ok(html_response(page));
+    }
+
+    let cookie_token = ctx.cookie("vanguard_csrf");
+    if cookie_token.is_none() || cookie_token.unwrap() != login_data.csrf_token {
+        let page = Page::new("Login - Vanguard")
+            .content(auth::login_page(Some("Invalid CSRF token"), ""))
+            .render()
+            .into_string();
+        return Ok(Response::builder()
+            .status(StatusCode::FORBIDDEN)
+            .header("Content-Type", "text/html")
+            .body(Full::new(Bytes::from(page)))
+            .unwrap());
+    }
 
     match ctx.state.auth.create_token(&login_data.username, 60) {
         Ok(token) => {
@@ -77,7 +143,13 @@ pub async fn login_post_handler(mut ctx: Ctx<AppState>) -> HandlerResponse {
                 .body(Full::new(Bytes::new()))
                 .unwrap())
         }
-        Err(_) => Ok(html_response(base_layout("Login - Vanguard", auth::login_page(Some("Internal error generating token"))).into_string())),
+        Err(_) => {
+            let page = Page::new("Login - Vanguard")
+                .content(auth::login_page(Some("Internal error generating token"), ""))
+                .render()
+                .into_string();
+            Ok(html_response(page))
+        }
     }
 }
 
@@ -97,7 +169,12 @@ pub async fn profile_handler(ctx: Ctx<AppState>) -> HandlerResponse {
     match get_user(&ctx) {
         Some(claims) => {
             let content = auth::profile_page(&claims.sub);
-            Ok(html_response(base_layout("Profile - Vanguard", content).into_string()))
+            let page = Page::new(format!("Profile - {}", claims.sub))
+                .description("User profile and settings.")
+                .content(content)
+                .render()
+                .into_string();
+            Ok(html_response(page))
         }
         None => redirect("/login"),
     }
@@ -119,7 +196,7 @@ fn redirect(path: &str) -> HandlerResponse {
         .unwrap())
 }
 
-fn get_user(ctx: &Ctx<AppState>) -> Option<Claims> {
+pub fn get_user(ctx: &Ctx<AppState>) -> Option<Claims> {
     let cookie_header = ctx.req.headers().get("Cookie")?.to_str().ok()?;
     for cookie_str in cookie_header.split(';') {
         let cookie_str = cookie_str.trim();

@@ -8,7 +8,7 @@ use fn_dsa::{
     VerifyingKey, VerifyingKeyStandard,
     DOMAIN_NONE, HASH_ID_RAW,
 };
-use rand::rngs::OsRng;
+use rand::{rngs::OsRng, RngCore};
 use serde::{Serialize, Deserialize};
 use chrono::{Utc, Duration};
 use cookie::{Cookie, SameSite};
@@ -102,6 +102,20 @@ impl AuthManager {
 
     pub fn auth_cookie(&self, token: String, secure: bool) -> String {
         Cookie::build(("vanguard_auth", token))
+            .path("/")
+            .http_only(true)
+            .same_site(SameSite::Lax)
+            .secure(secure)
+            .to_string()
+    }
+    pub fn generate_csrf_token(&self) -> String {
+        let mut bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut bytes);
+        STANDARD.encode(&bytes)
+    }
+
+    pub fn csrf_cookie(&self, token: &str, secure: bool) -> String {
+        Cookie::build(("vanguard_csrf", token.to_string()))
             .path("/")
             .http_only(true)
             .same_site(SameSite::Lax)

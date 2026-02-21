@@ -16,3 +16,7 @@ bytes = { workspace = true }
 futures-util = "0.3"
 tracing = "0.1"
 tracing-subscriber = "0.3"
+tokio-tungstenite = "0.28.0"
+hyper-tungstenite = "0.19.0"
+serde_urlencoded = "0.7.1"
+dashmap.workspace = true

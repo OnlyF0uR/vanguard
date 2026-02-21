@@ -1,14 +1,21 @@
 use maud::{html, Markup};
 
-pub fn home_page() -> Markup {
+pub fn home_page(is_auth: bool) -> Markup {
     html! {
         div {
             section style="margin-bottom: 4rem;" {
                 h1 { "Vanguard Framework" }
                 p { "A high-performance Rust foundation for secure, server-rendered web applications." }
                 div style="display: flex; gap: 1rem;" {
-                    a href="/login" class="btn" { "Get Started" }
-                    a href="/counter" class="btn btn-outline" { "View Demo" }
+                    @if is_auth {
+                        a href="/profile" class="btn" { "Profile" }
+                    } @else {
+                        a href="/login" class="btn" { "Get Started" }
+                    }
+                    a href="/counter" class="btn btn-outline" { "Counter Demo" }
+                    @if is_auth {
+                        a href="/ws/demo" class="btn btn-outline" { "Websocket Demo" }
+                    }
                 }
             }
             

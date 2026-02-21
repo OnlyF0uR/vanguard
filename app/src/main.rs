@@ -7,6 +7,7 @@ use vanguard_core::router::Router;
 use vanguard_core::server::{self, ServerConfig};
 use vanguard_core::static_files::static_handler;
 use vanguard_auth::AuthManager;
+use hyper::Response;
 use std::net::SocketAddr;
 use std::env;
 use dashmap::DashMap;
@@ -23,6 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         auth, 
         secure,
         counters: DashMap::new(),
+        rate_limiter: vanguard_core::rate_limit::RateLimiter::new(100, 10.0),
     };
 
     let router = Router::new(state)
@@ -33,6 +35,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .post("/logout", logout_handler)
         .get("/profile", profile_handler)
         .post("/api/increment", increment_api_handler) // New API route
+        .get("/ws/demo", |_ctx| async {
+            let page = vanguard_core::view::Page::new("WebSocket Demo - Vanguard")
+                .description("Realtime WebSocket messaging demonstration in Vanguard framework.")
+                .content(crate::frontend::ws_demo::ws_demo_page())
+                .inline_js(include_str!("frontend/ws_demo_script.js"))
+                .render()
+                .into_string();
+            Response::builder()
+                .header("Content-Type", "text/html")
+                .body(http_body_util::Full::new(bytes::Bytes::from(page)))
+                .unwrap()
+        })
+        .get("/ws/stream", backend::ws_handlers::ws_handler)
         .mount("/static", static_handler("."));
 
     let port = env::var("PORT").unwrap_or_else(|_| "3000".to_string()).parse().unwrap_or(3000);

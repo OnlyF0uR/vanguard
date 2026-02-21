@@ -27,9 +27,13 @@ pub async fn run<S: Send + Sync + 'static>(
         let cors_domain = cors_domain.clone();
 
         tokio::task::spawn(async move {
+            let peer_ip = match stream.peer_addr() {
+                Ok(addr) => addr.ip(),
+                Err(_) => "0.0.0.0".parse().unwrap(),
+            };
             let io = TokioIo::new(stream);
             if let Err(err) = http1::Builder::new()
-                .serve_connection(io, hyper::service::service_fn(move |req| {
+                .serve_connection(io, hyper::service::service_fn(move |mut req| {
                     let router = router.clone();
                     let cors_domain = cors_domain.clone();
                     async move {
@@ -40,21 +44,23 @@ pub async fn run<S: Send + Sync + 'static>(
                             
                         let is_options = req.method() == hyper::Method::OPTIONS;
                         
-                        // Handle CORS Preflight
-                        if is_options {
+                        let res = if is_options {
                             let mut res = Response::builder()
                                 .status(StatusCode::NO_CONTENT)
                                 .body(Full::new(Bytes::new()))
                                 .unwrap();
                             apply_cors_headers(res.headers_mut(), origin.as_deref(), &cors_domain);
-                            return Ok::<_, hyper::Error>(res);
-                        }
-
-                        let mut res = router.handle(req).await?;
-                        apply_cors_headers(res.headers_mut(), origin.as_deref(), &cors_domain);
+                            res
+                        } else {
+                            req.extensions_mut().insert(peer_ip);
+                            let mut res = router.handle(req).await?;
+                            apply_cors_headers(res.headers_mut(), origin.as_deref(), &cors_domain);
+                            res
+                        };
                         Ok::<_, hyper::Error>(res)
                     }
                 }))
+                .with_upgrades()
                 .await
             {
                 eprintln!("Error serving connection: {:?}", err);

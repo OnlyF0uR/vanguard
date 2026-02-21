@@ -1,5 +1,5 @@
 use maud::{html, Markup, PreEscaped};
-use vanguard_core::state::serialize_state;
+use vanguard_core::state::serialize_global_state;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -26,13 +26,13 @@ pub fn counter_page(state: &CounterState) -> Markup {
                 a href="/" class="nav-link" { "← Back to Home" }
             }
 
-            (serialize_state("counter", state))
+            (serialize_global_state("counter", state))
 
             script data-page {
                 (PreEscaped(r#"
                     const btn = document.getElementById('inc-btn');
                     const display = document.getElementById('count-display');
-                    let state = Router.getState('counter') || { count: 0 };
+                    let state = Router.getGlobalState('counter') || { count: 0 };
                     display.innerText = state.count;
 
                     btn.onclick = async () => {
@@ -42,7 +42,7 @@ pub fn counter_page(state: &CounterState) -> Markup {
                             const response = await fetch('/api/increment', { method: 'POST' });
                             if (response.ok) {
                                 const data = await response.json();
-                                Router.setState('counter', { count: data.count }, true);
+                                Router.setGlobalState('counter', { count: data.count }, true);
                                 display.innerText = data.count;
                             } else if (response.status === 401) {
                                 window.location.href = '/login';

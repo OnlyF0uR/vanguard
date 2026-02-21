@@ -1,6 +1,6 @@
 use maud::{html, Markup};
 
-pub fn login_page(error: Option<&str>) -> Markup {
+pub fn login_page(error: Option<&str>, csrf_token: &str) -> Markup {
     html! {
         div class="container" {
             div class="card" {
@@ -12,6 +12,7 @@ pub fn login_page(error: Option<&str>) -> Markup {
                 }
 
                 form action="/login" method="POST" {
+                    input type="hidden" name="csrf_token" value=(csrf_token);
                     div class="form-group" {
                         label { "Username" }
                         input type="text" name="username" required autocomplete="username";
